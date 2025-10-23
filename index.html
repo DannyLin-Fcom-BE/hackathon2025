@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Emotion Insight Bot - Hackathon Showcase</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <!-- Chosen Palette: Calm Neutrals -->
@@ -52,6 +53,17 @@
 
         .feedback-link:hover {
             text-decoration: underline;
+        }
+
+        .chart-wrapper {
+            position: relative;
+            height: 260px;
+        }
+
+        @media (min-width: 1024px) {
+            .chart-wrapper {
+                height: 300px;
+            }
         }
 
         .markdown-content {
@@ -218,8 +230,12 @@
                 <div class="mt-12 max-w-2xl mx-auto card p-6">
                     <h3 class="font-semibold text-center text-gray-800">Why a Scraper Instead of the Official API?</h3>
                     <ul class="mt-4 space-y-2 text-sm text-gray-600 list-disc list-inside">
-                        <li><strong>High Cost:</strong> The official X.com API has a high cost, which can be
-                            prohibitive.</li>
+                        <li><strong>Cost Reality:</strong> Official X.com API tiers start around <strong>$200</strong>
+                            and climb to
+                            <strong>$5,000+</strong> per month; our scraper runs on a single low-spec PC, so recurring
+                            cost is
+                            essentially zero beyond power and internet.
+                        </li>
                         <li><strong>Greater Flexibility:</strong> Scraping allows us to access content that might not be
                             available through the API. This approach can also be extended to other social platforms that
                             may not have a public API.</li>
@@ -240,11 +256,24 @@
                 </div>
 
                 <div class="mt-12 grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
-                    <div class="card p-6 h-full">
-                        <h3 class="text-lg font-semibold text-gray-800 mb-4">Demo Output</h3>
-                        <div id="demo-markdown" class="markdown-content space-y-4">
-                            <p class="text-gray-500">Loading demo results…</p>
+                    <div class="space-y-6">
+                        <div class="card p-6">
+                            <h3 class="text-lg font-semibold text-gray-800 mb-4">Real Output</h3>
+                            <div id="demo-markdown" class="markdown-content space-y-4">
+                                <p class="text-gray-500">Loading demo results…</p>
+                            </div>
                         </div>
+                    </div>
+                    <div class="card p-6">
+                        <h3 class="text-lg font-semibold text-gray-800 mb-4 text-center">Sentiment
+                            Snapshot(Football.com)</h3>
+                        <div class="chart-wrapper">
+                            <canvas id="demo-sentiment-chart" aria-label="Sentiment distribution chart"></canvas>
+                        </div>
+                        <p class="mt-4 text-sm text-gray-500 text-center">Totals from 76 posts — 24 positive mentions
+                            (<strong>22</strong> unique voices), 12 negative mentions (<strong>11</strong> unique
+                            voices),
+                            40 neutral posts.</p>
                     </div>
                     <div class="card p-6 h-full">
                         <h3 class="text-lg font-semibold text-gray-800 mb-4 text-center">Demo Video of the System in
@@ -333,6 +362,50 @@
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             const markdownContainer = document.getElementById('demo-markdown');
+            const sentimentChartElement = document.getElementById('demo-sentiment-chart');
+            const TOTAL_POSTS = 76;
+            const POSITIVE_COUNT = 24;
+            const NEGATIVE_COUNT = 12;
+            const NEUTRAL_COUNT = 40;
+
+            if (sentimentChartElement && window.Chart) {
+                new Chart(sentimentChartElement, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Positive', 'Negative', 'Neutral'],
+                        datasets: [{
+                            data: [POSITIVE_COUNT, NEGATIVE_COUNT, NEUTRAL_COUNT],
+                            backgroundColor: ['rgba(34, 197, 94, 0.8)', 'rgba(239, 68, 68, 0.8)', 'rgba(107, 114, 128, 0.8)'],
+                            borderColor: ['#16a34a', '#dc2626', '#6b7280'],
+                            borderWidth: 2,
+                            hoverOffset: 6
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        cutout: '55%',
+                        plugins: {
+                            legend: {
+                                position: 'bottom',
+                                labels: {
+                                    usePointStyle: true,
+                                    padding: 16
+                                }
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function (context) {
+                                        if (context.parsed === null) return context.label || '';
+                                        const percentage = ((context.parsed / TOTAL_POSTS) * 100).toFixed(1);
+                                        return `${context.label}: ${context.parsed} posts (${percentage}%)`;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
 
             if (markdownContainer && window.marked) {
                 fetch('demo_result.txt')
