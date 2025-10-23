@@ -1,17 +1,18 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Emotion Insight Bot - Hackathon Showcase</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <!-- Chosen Palette: Calm Neutrals -->
     <!-- Application Structure Plan: The SPA is designed as a top-down narrative showcase. It starts with a hero section explaining the 'what' and 'why' (Problem/Solution from slides 1-4). It then flows into a visual diagram of 'How It Works' (slide 5) for technical context. The centerpiece is an interactive 'Daily Report Dashboard' that transforms the static report text from slide 6 into a filterable, visual experience with a chart and categorized cards. This structure was chosen to turn a linear presentation into an engaging, explorable tool, allowing users (judges, stakeholders) to interact with the project's output directly, which is more impactful than reading slides. The final sections cover the future Roadmap and Business Impact (slides 7-8) to complete the project's story. -->
     <!-- Visualization & Content Choices: 
-        - Report Info: Overall sentiment ratio (positive vs. complaints). -> Goal: Inform/Compare. -> Viz: Donut Chart (Chart.js/Canvas). -> Interaction: Hover to see details. -> Justification: Provides a quick, high-level summary of the daily mood from the report.
-        - Report Info: Specific feedback points (Context, Positive, Complaints). -> Goal: Organize/Explore. -> Presentation: Themed cards in a grid. -> Interaction: Filter buttons (All, Context, Positive, Complaints) using JS to toggle visibility. -> Justification: Allows users to digest the dense information from slide 6 by focusing on specific feedback types, making the data less overwhelming.
+        - Report Info: Daily sentiment story rendered directly from demo_result.txt (Markdown). -> Goal: Preserve authentic formatting and links from the automated summary. -> Presentation: Markdown rendered with Marked.js inside a card.
+        - Demo Format: Side-by-side layout pairs the Markdown snapshot with a walkthrough video. -> Goal: Let judges read the raw output while watching the system operate. -> Interaction: Simple, scrollable text block with external links opening in new tabs.
         - Report Info: System workflow. -> Goal: Organize/Inform. -> Presentation: Diagram built with HTML/CSS Flexbox. -> Interaction: Subtle hover effects. -> Justification: A visual flow is more intuitive for explaining a technical process than a simple text list from slide 5.
     -->
     <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
@@ -21,12 +22,15 @@
             background-color: #f8f7f4;
             color: #3d3d3d;
         }
+
         .nav-link {
             transition: color 0.3s ease;
         }
+
         .nav-link:hover {
             color: #4f46e5;
         }
+
         .card {
             background-color: #ffffff;
             border: 1px solid #e5e7eb;
@@ -34,42 +38,72 @@
             box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05), 0 2px 4px -2px rgb(0 0 0 / 0.05);
             transition: transform 0.3s ease, box-shadow 0.3s ease;
         }
+
         .card:hover {
             transform: translateY(-5px);
             box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.08), 0 4px 6px -4px rgb(0 0 0 / 0.08);
         }
-        .filter-btn {
-            transition: all 0.3s ease;
-        }
-        .filter-btn.active {
-            background-color: #4f46e5;
-            color: #ffffff;
-            box-shadow: 0 4px 14px 0 rgba(79, 70, 229, 0.39);
-        }
-        .chart-container {
-            position: relative;
-            width: 100%;
-            max-width: 400px;
-            margin-left: auto;
-            margin-right: auto;
-            height: 300px;
-            max-height: 350px;
-        }
-        @media (min-width: 768px) {
-            .chart-container {
-                height: 350px;
-            }
-        }
+
         .feedback-link {
             color: #4f46e5;
             text-decoration: none;
             font-weight: 500;
         }
+
         .feedback-link:hover {
             text-decoration: underline;
         }
+
+        .markdown-content {
+            font-size: 0.95rem;
+            line-height: 1.7;
+            color: #374151;
+        }
+
+        .markdown-content h1,
+        .markdown-content h2,
+        .markdown-content h3 {
+            margin-top: 1.5rem;
+            margin-bottom: 0.75rem;
+            font-weight: 700;
+            color: #1f2937;
+        }
+
+        .markdown-content h1 {
+            font-size: 1.5rem;
+        }
+
+        .markdown-content h2 {
+            font-size: 1.25rem;
+        }
+
+        .markdown-content h3 {
+            font-size: 1.1rem;
+        }
+
+        .markdown-content ul,
+        .markdown-content ol {
+            margin-left: 1.5rem;
+            margin-top: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .markdown-content ul {
+            list-style-type: disc;
+        }
+
+        .markdown-content ol {
+            list-style-type: decimal;
+        }
+
+        .markdown-content a {
+            color: #4f46e5;
+            text-decoration: underline;
+            word-break: break-word;
+        }
     </style>
 </head>
+
 <body class="antialiased">
 
     <!-- Header & Navigation -->
@@ -81,11 +115,16 @@
                 </div>
                 <div class="hidden md:block">
                     <div class="ml-10 flex items-baseline space-x-4">
-                        <a href="#concept" class="nav-link text-gray-600 font-medium px-3 py-2 rounded-md text-sm">The Concept</a>
-                        <a href="#how-it-works" class="nav-link text-gray-600 font-medium px-3 py-2 rounded-md text-sm">How It Works</a>
-                        <a href="#dashboard" class="nav-link text-gray-600 font-medium px-3 py-2 rounded-md text-sm">Daily Report</a>
-                        <a href="#roadmap" class="nav-link text-gray-600 font-medium px-3 py-2 rounded-md text-sm">Roadmap</a>
-                        <a href="#impact" class="nav-link text-gray-600 font-medium px-3 py-2 rounded-md text-sm">Impact</a>
+                        <a href="#concept" class="nav-link text-gray-600 font-medium px-3 py-2 rounded-md text-sm">The
+                            Concept</a>
+                        <a href="#how-it-works"
+                            class="nav-link text-gray-600 font-medium px-3 py-2 rounded-md text-sm">How It Works</a>
+                        <a href="#dashboard"
+                            class="nav-link text-gray-600 font-medium px-3 py-2 rounded-md text-sm">Daily Report</a>
+                        <a href="#roadmap"
+                            class="nav-link text-gray-600 font-medium px-3 py-2 rounded-md text-sm">Roadmap</a>
+                        <a href="#impact"
+                            class="nav-link text-gray-600 font-medium px-3 py-2 rounded-md text-sm">Impact</a>
                     </div>
                 </div>
             </div>
@@ -97,13 +136,17 @@
         <section id="concept" class="py-16 sm:py-24">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
                 <p class="text-base font-semibold text-indigo-600 tracking-wide uppercase">Hackathon 2025</p>
-                <h1 class="mt-2 text-4xl font-extrabold text-gray-900 tracking-tight sm:text-5xl">Harnessing the Voice of the Customer to Build Better Products</h1>
-                <p class="mt-6 max-w-3xl mx-auto text-xl text-gray-500">We're turning unstructured social chatter into a clear signal for product improvement.</p>
+                <h1 class="mt-2 text-4xl font-extrabold text-gray-900 tracking-tight sm:text-5xl">Harnessing the Voice
+                    of the Customer to Build Better Products</h1>
+                <p class="mt-6 max-w-3xl mx-auto text-xl text-gray-500">We're turning unstructured social chatter into a
+                    clear signal for product improvement.</p>
             </div>
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-16 grid grid-cols-1 md:grid-cols-2 gap-12">
                 <div class="card p-8">
                     <h2 class="text-2xl font-bold text-gray-800">The Problem: Are We Really Listening?</h2>
-                    <p class="mt-4 text-gray-600">How do we understand our customers' true feelings right now? Traditional feedback is often delayed and filtered. We are missing out on a goldmine of real-time insights happening on social media.</p>
+                    <p class="mt-4 text-gray-600">How do we understand our customers' true feelings right now?
+                        Traditional feedback is often delayed and filtered. We are missing out on a goldmine of
+                        real-time insights happening on social media.</p>
                     <ul class="mt-6 space-y-4">
                         <li class="flex items-start">
                             <span class="text-red-500 mr-3 mt-1">●</span>
@@ -113,7 +156,7 @@
                             <span class="text-red-500 mr-3 mt-1">●</span>
                             <span class="text-gray-700">A constant stream of raw feedback is missed.</span>
                         </li>
-                         <li class="flex items-start">
+                        <li class="flex items-start">
                             <span class="text-red-500 mr-3 mt-1">●</span>
                             <span class="text-gray-700">A gap exists in understanding real-time customer emotion.</span>
                         </li>
@@ -121,19 +164,22 @@
                 </div>
                 <div class="card p-8 bg-indigo-50">
                     <h2 class="text-2xl font-bold text-indigo-900">Our Solution: A Real-Time Sentiment Engine</h2>
-                     <p class="mt-4 text-indigo-800">We built an automated system that:</p>
+                    <p class="mt-4 text-indigo-800">We built an automated system that:</p>
                     <ul class="mt-6 space-y-4">
                         <li class="flex items-start">
-                             <span class="text-green-600 font-bold mr-3 mt-1">1.</span>
-                             <span class="text-gray-700"><strong>Listens:</strong> Scrapes public discussions about our products on X.com (Twitter).</span>
+                            <span class="text-green-600 font-bold mr-3 mt-1">1.</span>
+                            <span class="text-gray-700"><strong>Listens:</strong> Scrapes public discussions about our
+                                products on X.com (Twitter).</span>
                         </li>
                         <li class="flex items-start">
                             <span class="text-green-600 font-bold mr-3 mt-1">2.</span>
-                             <span class="text-gray-700"><strong>Understands:</strong> Uses AI (ChatGPT) to analyze and summarize key themes, praises, and complaints.</span>
+                            <span class="text-gray-700"><strong>Understands:</strong> Uses AI (ChatGPT) to analyze and
+                                summarize key themes, praises, and complaints.</span>
                         </li>
                         <li class="flex items-start">
-                             <span class="text-green-600 font-bold mr-3 mt-1">3.</span>
-                             <span class="text-gray-700"><strong>Delivers:</strong> Pushes a concise, actionable report to a Slack channel every single day.</span>
+                            <span class="text-green-600 font-bold mr-3 mt-1">3.</span>
+                            <span class="text-gray-700"><strong>Delivers:</strong> Pushes a concise, actionable report
+                                to a Slack channel every single day.</span>
                         </li>
                     </ul>
                 </div>
@@ -145,7 +191,8 @@
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div class="text-center">
                     <h2 class="text-3xl font-extrabold text-gray-900">How It Works (Hackathon MVP)</h2>
-                    <p class="mt-4 max-w-2xl mx-auto text-lg text-gray-500">A simple, powerful, and automated workflow.</p>
+                    <p class="mt-4 max-w-2xl mx-auto text-lg text-gray-500">A simple, powerful, and automated workflow.
+                    </p>
                 </div>
                 <div class="mt-12 flex flex-col md:flex-row items-center justify-center gap-4 md:gap-8">
                     <div class="card p-6 text-center w-60 h-40 flex flex-col justify-center">
@@ -162,59 +209,55 @@
                         <div class="text-4xl">⏰</div>
                         <h3 class="font-semibold text-gray-800 mt-2">Scheduler (Windows)</h3>
                     </div>
-                     <div class="text-4xl text-gray-300 font-light transform rotate-90 md:rotate-0">→</div>
+                    <div class="text-4xl text-gray-300 font-light transform rotate-90 md:rotate-0">→</div>
                     <div class="card p-6 text-center w-60 h-40 flex flex-col justify-center">
                         <div class="text-4xl">💬</div>
                         <h3 class="font-semibold text-gray-800 mt-2">Notification (Slack)</h3>
                     </div>
                 </div>
-                 <div class="mt-12 max-w-2xl mx-auto card p-6">
+                <div class="mt-12 max-w-2xl mx-auto card p-6">
                     <h3 class="font-semibold text-center text-gray-800">Why a Scraper Instead of the Official API?</h3>
                     <ul class="mt-4 space-y-2 text-sm text-gray-600 list-disc list-inside">
-                        <li><strong>High Cost:</strong> The official X.com API has a high cost, which can be prohibitive.</li>
-                        <li><strong>Greater Flexibility:</strong> Scraping allows us to access content that might not be available through the API. This approach can also be extended to other social platforms that may not have a public API.</li>
-                        <li><strong>Trade-off:</strong> The main drawback is that the scraper may need updates if the target platform changes its layout.</li>
+                        <li><strong>High Cost:</strong> The official X.com API has a high cost, which can be
+                            prohibitive.</li>
+                        <li><strong>Greater Flexibility:</strong> Scraping allows us to access content that might not be
+                            available through the API. This approach can also be extended to other social platforms that
+                            may not have a public API.</li>
+                        <li><strong>Trade-off:</strong> The main drawback is that the scraper may need updates if the
+                            target platform changes its layout.</li>
                     </ul>
                 </div>
             </div>
         </section>
 
-        <!-- Section 3: Daily Report Dashboard -->
+        <!-- Section 3: Demo -->
         <section id="dashboard" class="py-16 sm:py-24">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div class="text-center">
-                    <h2 class="text-3xl font-extrabold text-gray-900">The Daily Report (Interactive Demo)</h2>
-                    <p class="mt-4 max-w-2xl mx-auto text-lg text-gray-500">This is a simulation of the daily sentiment dashboard. Interact with the chart and filters to explore different types of customer feedback.</p>
+                    <h2 class="text-3xl font-extrabold text-gray-900">The Daily Report Demo</h2>
+                    <p class="mt-4 max-w-2xl mx-auto text-lg text-gray-500">Explore the real daily summary generated by
+                        our pipeline and watch the system in action.</p>
                 </div>
-                
-                <div class="mt-12 grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
-                    <div class="lg:col-span-1 space-y-8">
-                        <div class="card p-6">
-                             <h3 class="text-lg font-semibold text-gray-800 text-center mb-4">Sentiment Breakdown</h3>
-                             <div class="chart-container">
-                                <canvas id="sentimentChart"></canvas>
-                            </div>
-                        </div>
-                         <div class="card p-6">
-                            <h3 class="text-lg font-semibold text-gray-800">Filter Feedback</h3>
-                            <div id="filter-buttons" class="mt-4 flex flex-wrap gap-2">
-                                <button data-filter="all" class="filter-btn active flex-grow font-medium py-2 px-4 rounded-lg bg-gray-200 text-gray-700">All</button>
-                                <button data-filter="context" class="filter-btn flex-grow font-medium py-2 px-4 rounded-lg bg-gray-200 text-gray-700">Context</button>
-                                <button data-filter="positive" class="filter-btn flex-grow font-medium py-2 px-4 rounded-lg bg-gray-200 text-gray-700">Positive</button>
-                                <button data-filter="complaint" class="filter-btn flex-grow font-medium py-2 px-4 rounded-lg bg-gray-200 text-gray-700">Complaints</button>
-                            </div>
+
+                <div class="mt-12 grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+                    <div class="card p-6 h-full">
+                        <h3 class="text-lg font-semibold text-gray-800 mb-4">Latest Demo Output (Markdown)</h3>
+                        <div id="demo-markdown" class="markdown-content space-y-4">
+                            <p class="text-gray-500">Loading demo results…</p>
                         </div>
                     </div>
-                    <div id="feedback-container" class="lg:col-span-2 grid grid-cols-1 gap-6">
+                    <div class="card p-6 h-full">
+                        <h3 class="text-lg font-semibold text-gray-800 mb-4 text-center">Demo Video of the System in
+                            Action</h3>
+                        <div class="relative w-full">
+                            <video class="w-full rounded-lg shadow-sm" controls>
+                                <source src="demo_video.mp4" type="video/mp4">
+                                Your browser does not support the video tag.
+                            </video>
+                        </div>
                     </div>
                 </div>
             </div>
-        </section>
-        <section class="pb-16">
-            <h3 class="text-center text-gray-700 mb-4">Demo Video of the System in Action</h3>
-            <video class="mx-auto" width="800" controls>
-                <source src="demo_video.mp4" type="video/mp4">
-                Your browser does not support the video tag.
         </section>
 
         <!-- Section 4: Roadmap -->
@@ -222,21 +265,26 @@
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div class="text-center">
                     <h2 class="text-3xl font-extrabold text-gray-900">The Future Roadmap</h2>
-                    <p class="mt-4 max-w-2xl mx-auto text-lg text-gray-500">This concept is built to grow. The code is a foundation that a product team can easily iterate on.</p>
+                    <p class="mt-4 max-w-2xl mx-auto text-lg text-gray-500">This concept is built to grow. The code is a
+                        foundation that a product team can easily iterate on.</p>
                 </div>
                 <div class="mt-12 grid grid-cols-1 md:grid-cols-2 gap-8">
                     <div class="card p-8">
                         <h3 class="text-xl font-bold text-gray-800">Phase 1 (Short-Term)</h3>
                         <ul class="mt-4 space-y-3 text-gray-600 list-disc list-inside">
-                            <li><strong>Expand Platforms:</strong> Integrate more sources like Reddit, Facebook, and product review sites.</li>
-                            <li><strong>Competitive Analysis:</strong> Track what customers are saying about our competitors.</li>
+                            <li><strong>Expand Platforms:</strong> Integrate more sources like Reddit, Facebook, and
+                                product review sites.</li>
+                            <li><strong>Competitive Analysis:</strong> Track what customers are saying about our
+                                competitors.</li>
                         </ul>
                     </div>
                     <div class="card p-8">
                         <h3 class="text-xl font-bold text-gray-800">Phase 2 (Medium-Term)</h3>
                         <ul class="mt-4 space-y-3 text-gray-600 list-disc list-inside">
-                            <li><strong>Internal Dashboard:</strong> Create a web-based dashboard for long-term trend analysis, keyword filtering, and data visualization.</li>
-                            <li><strong>Real-time Alerts:</strong> Set up automated alerts for sudden spikes in negative sentiment to enable rapid response.</li>
+                            <li><strong>Internal Dashboard:</strong> Create a web-based dashboard for long-term trend
+                                analysis, keyword filtering, and data visualization.</li>
+                            <li><strong>Real-time Alerts:</strong> Set up automated alerts for sudden spikes in negative
+                                sentiment to enable rapid response.</li>
                         </ul>
                     </div>
                 </div>
@@ -253,25 +301,29 @@
                 <div class="mt-12 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
                     <div class="card p-6 text-center">
                         <h3 class="font-semibold text-gray-800">Proactive Improvement</h3>
-                        <p class="mt-2 text-sm text-gray-600">Catch issues and user frustrations before they escalate.</p>
+                        <p class="mt-2 text-sm text-gray-600">Catch issues and user frustrations before they escalate.
+                        </p>
                     </div>
                     <div class="card p-6 text-center">
                         <h3 class="font-semibold text-gray-800">Data-Driven Roadmaps</h3>
-                        <p class="mt-2 text-sm text-gray-600">Make product decisions based on real, unsolicited customer feedback.</p>
+                        <p class="mt-2 text-sm text-gray-600">Make product decisions based on real, unsolicited customer
+                            feedback.</p>
                     </div>
                     <div class="card p-6 text-center">
                         <h3 class="font-semibold text-gray-800">Increased Competitiveness</h3>
-                        <p class="mt-2 text-sm text-gray-600">Understand market sentiment and our position relative to competitors.</p>
+                        <p class="mt-2 text-sm text-gray-600">Understand market sentiment and our position relative to
+                            competitors.</p>
                     </div>
-                     <div class="card p-6 text-center">
+                    <div class="card p-6 text-center">
                         <h3 class="font-semibold text-gray-800">Strengthen Customer Connection</h3>
-                        <p class="mt-2 text-sm text-gray-600">Show our users we are listening and responding to their needs.</p>
+                        <p class="mt-2 text-sm text-gray-600">Show our users we are listening and responding to their
+                            needs.</p>
                     </div>
                 </div>
             </div>
         </section>
     </main>
-    
+
     <footer class="bg-white border-t border-gray-200">
         <div class="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8 text-center text-gray-500 text-sm">
             <p>&copy; 2025 Emotion Insight Bot - Hackathon Project</p>
@@ -280,126 +332,39 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', function () {
-            const feedbackData = [
-                { type: 'context', text: 'Cash Out is the hot topic: multiple users say Cash Out is locked late in games or ask for it to be opened. <a href="https://x.com/Topboyy23/status/1980034845603418212" target="_blank" class="feedback-link">@Topboyy23</a>, <a href="https://x.com/SlimNwachukwu/status/1980074183108473201" target="_blank" class="feedback-link">@SlimNwachukwu</a>' },
-                { type: 'context', text: 'Balance/settlement noise: reports of unexplained deductions and questions about ticket settlement. <a href="https://x.com/PreshofDelta/status/1980052620526940656" target="_blank" class="feedback-link">@PreshofDelta</a>' },
-                { type: 'context', text: 'Access/friction: one user says a link “is not working.” <a href="https://x.com/Mikephi57830183/status/1980041633212330356" target="_blank" class="feedback-link">@Mikephi57830183</a>' },
-                { type: 'context', text: 'Switching chatter vs. Sporty: some compare platforms; one says “http better than sporty.” <a href="https://x.com/OyindamolaAded9/status/1980034542913347652" target="_blank" class="feedback-link">@OyindamolaAded9</a>' },
-                { type: 'context', text: 'Promo/code hunting and new sign-up intent persist (referral/code requests). <a href="https://x.com/NAJIB_HSN/status/1980044974373638386" target="_blank" class="feedback-link">@NAJIB_HSN</a>' },
-                { type: 'context', text: 'Official support is present: the brand account replies with offer info and asks for ticket details via DM.' },
-                { type: 'positive', text: 'Perceived better than Sporty by at least one user. <a href="https://x.com/OyindamolaAded9/status/1980034542913347652" target="_blank" class="feedback-link">@OyindamolaAded9</a>' },
-                { type: 'positive', text: 'User intent to open a new account/referral request. <a href="https://x.com/NAJIB_HSN/status/1980044974373638386" target="_blank" class="feedback-link">@NAJIB_HSN</a>' },
-                { type: 'positive', text: 'Active demand for platform codes suggests engagement with promos. <a href="https://x.com/foreign23109/status/1980041490714771773" target="_blank" class="feedback-link">@foreign23109</a>' },
-                { type: 'positive', text: 'Brand responsiveness: public guidance on offers + DM triage.' },
-                { type: 'complaint', text: 'Cash Out locked throughout matches; calls to “open Cash Out.” <a href="https://x.com/Topboyy23/status/1980034845603418212" target="_blank" class="feedback-link">@Topboyy23</a>' },
-                { type: 'complaint', text: 'Cash Out allegedly locked when 1–2 legs remain. <a href="https://x.com/SlimNwachukwu/status/1980074183108473201" target="_blank" class="feedback-link">@SlimNwachukwu</a>' },
-                { type: 'complaint', text: 'Balance discrepancy (“minus” in account; match not on ticket). <a href="https://x.com/PreshofDelta/status/1980052620526940656" target="_blank" class="feedback-link">@PreshofDelta</a>' },
-                { type: 'complaint', text: 'Settlement uncertainty (“have they settled your ticket?”). <a href="https://x.com/Rosh_Afc1/status/1980034817116061771" target="_blank" class="feedback-link">@Rosh_Afc1</a>' },
-                { type: 'complaint', text: 'Link not working/access issues. <a href="https://x.com/Mikephi57830183/status/1980041633212330356" target="_blank" class="feedback-link">@Mikephi57830183</a>' },
-                { type: 'complaint', text: 'General frustration/negative sentiment (“too smh”, “1 cut spoil wound me”, accusations). <a href="https://x.com/classicmaxwell/status/1980045702412615991" target="_blank" class="feedback-link">@classicmaxwell</a>' },
-            ];
-            
-            const typeConfig = {
-                context: { title: 'Today’s Context', icon: '🔍', bgColor: 'bg-blue-50', textColor: 'text-blue-800', borderColor: 'border-blue-200' },
-                positive: { title: 'Positive Feedback', icon: '👍', bgColor: 'bg-green-50', textColor: 'text-green-800', borderColor: 'border-green-200' },
-                complaint: { title: 'Complaints', icon: '🚨', bgColor: 'bg-red-50', textColor: 'text-red-800', borderColor: 'border-red-200' }
-            };
+            const markdownContainer = document.getElementById('demo-markdown');
 
-            const feedbackContainer = document.getElementById('feedback-container');
-            const filterButtonsContainer = document.getElementById('filter-buttons');
-
-            function renderFeedback(filter = 'all') {
-                feedbackContainer.innerHTML = '';
-                const filteredData = filter === 'all' ? feedbackData : feedbackData.filter(item => item.type === filter);
-
-                const groupedData = filteredData.reduce((acc, item) => {
-                    if (!acc[item.type]) acc[item.type] = [];
-                    acc[item.type].push(item.text);
-                    return acc;
-                }, {});
-                
-                const displayOrder = ['context', 'positive', 'complaint'];
-                
-                displayOrder.forEach(type => {
-                    if (groupedData[type]) {
-                        const config = typeConfig[type];
-                        const items = groupedData[type];
-
-                        const card = document.createElement('div');
-                        card.className = `card p-6 ${config.bgColor} border ${config.borderColor} feedback-card`;
-                        card.dataset.type = type;
-
-                        let listItems = items.map(text => `<li class="text-gray-700">${text}</li>`).join('');
-
-                        card.innerHTML = `
-                            <h3 class="text-xl font-bold ${config.textColor} flex items-center">
-                                <span class="mr-3 text-2xl">${config.icon}</span>
-                                ${config.title}
-                            </h3>
-                            <ul class="mt-4 space-y-3 list-disc list-inside">
-                                ${listItems}
-                            </ul>
-                        `;
-                        feedbackContainer.appendChild(card);
-                    }
-                });
-            }
-            
-            filterButtonsContainer.addEventListener('click', function(e) {
-                if (e.target.tagName === 'BUTTON') {
-                    document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
-                    e.target.classList.add('active');
-                    renderFeedback(e.target.dataset.filter);
-                }
-            });
-
-            const positiveCount = feedbackData.filter(item => item.type === 'positive').length;
-            const complaintCount = feedbackData.filter(item => item.type === 'complaint').length;
-            const contextCount = feedbackData.filter(item => item.type === 'context').length;
-
-            const ctx = document.getElementById('sentimentChart').getContext('2d');
-            new Chart(ctx, {
-                type: 'doughnut',
-                data: {
-                    labels: ['Complaints', 'Positive', 'Context'],
-                    datasets: [{
-                        label: 'Feedback Breakdown',
-                        data: [complaintCount, positiveCount, contextCount],
-                        backgroundColor: ['rgba(239, 68, 68, 0.7)', 'rgba(34, 197, 94, 0.7)', 'rgba(59, 130, 246, 0.7)'],
-                        borderColor: ['#ef4444', '#22c55e', '#3b82f6'],
-                        borderWidth: 2
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { position: 'bottom' },
-                        tooltip: {
-                            callbacks: {
-                                label: function(context) {
-                                    let label = context.label || '';
-                                    if (label) label += ': ';
-                                    if (context.parsed !== null) {
-                                        const total = context.chart.data.datasets[0].data.reduce((a, b) => a + b, 0);
-                                        const percentage = ((context.parsed / total) * 100).toFixed(1);
-                                        label += `${context.raw} (${percentage}%)`;
-                                    }
-                                    return label;
-                                }
-                            }
+            if (markdownContainer && window.marked) {
+                fetch('demo_result.txt')
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error(`HTTP ${response.status}`);
                         }
-                    }
-                }
-            });
+                        return response.text();
+                    })
+                    .then(text => {
+                        const html = marked.parse(text, { breaks: true });
+                        markdownContainer.innerHTML = html;
 
-            renderFeedback();
+                        markdownContainer.querySelectorAll('a').forEach(link => {
+                            link.setAttribute('target', '_blank');
+                            link.setAttribute('rel', 'noopener noreferrer');
+                            link.classList.add('feedback-link');
+                        });
+                    })
+                    .catch(error => {
+                        console.error('Failed to load demo markdown:', error);
+                        markdownContainer.innerHTML = '<p class="text-red-600">Unable to load demo results at this time.</p>';
+                    });
+            } else if (markdownContainer) {
+                markdownContainer.innerHTML = '<p class="text-red-600">Markdown renderer unavailable.</p>';
+            }
 
             document.querySelectorAll('a[href^="#"]').forEach(anchor => {
                 anchor.addEventListener('click', function (e) {
                     e.preventDefault();
                     const targetElement = document.querySelector(this.getAttribute('href'));
-                    if(targetElement) {
+                    if (targetElement) {
                         targetElement.scrollIntoView({ behavior: 'smooth' });
                     }
                 });
@@ -407,5 +372,5 @@
         });
     </script>
 </body>
-</html>
 
+</html>
