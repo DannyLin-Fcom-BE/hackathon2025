@@ -66,6 +66,33 @@
             }
         }
 
+        .collapsible {
+            max-height: 24rem;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+        }
+
+        .collapsible.expanded {
+            max-height: none;
+            overflow-y: auto;
+        }
+
+        .fade-overlay {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 4rem;
+            background: linear-gradient(to top, rgba(255, 255, 255, 1), rgba(255, 255, 255, 0));
+            pointer-events: none;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+
+        .fade-overlay.fade-overlay--hidden {
+            opacity: 0;
+            visibility: hidden;
+        }
+
         .markdown-content {
             font-size: 0.95rem;
             line-height: 1.7;
@@ -256,33 +283,37 @@
                 </div>
 
                 <div class="mt-12 grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
-                    <div class="space-y-6">
-                        <div class="card p-6">
-                            <h3 class="text-lg font-semibold text-gray-800 mb-4">Real Output</h3>
-                            <div id="demo-markdown" class="markdown-content space-y-4">
+                    <div class="card p-6 h-full flex flex-col">
+                        <h3 class="text-lg font-semibold text-gray-800 mb-4">Demo Output (Markdown)</h3>
+                        <div class="relative flex-1">
+                            <div id="demo-markdown" class="markdown-content collapsible pr-1 space-y-4">
                                 <p class="text-gray-500">Loading demo results…</p>
                             </div>
+                            <div id="demo-markdown-fade" class="fade-overlay fade-overlay--hidden"></div>
                         </div>
+                        <button id="markdown-toggle" type="button"
+                            class="mt-4 text-sm font-semibold text-indigo-600 hover:text-indigo-700 transition hidden self-start"
+                            aria-controls="demo-markdown" aria-expanded="false">展開全文</button>
                     </div>
-                    <div class="card p-6">
-                        <h3 class="text-lg font-semibold text-gray-800 mb-4 text-center">Sentiment
-                            Snapshot(Football.com)</h3>
-                        <div class="chart-wrapper">
-                            <canvas id="demo-sentiment-chart" aria-label="Sentiment distribution chart"></canvas>
+                    <div class="grid gap-6">
+                        <div class="card p-6">
+                            <h3 class="text-lg font-semibold text-gray-800 mb-4 text-center">Sentiment Snapshot</h3>
+                            <div class="chart-wrapper">
+                                <canvas id="demo-sentiment-chart" aria-label="Sentiment distribution chart"></canvas>
+                            </div>
+                            <p class="mt-4 text-sm text-gray-500 text-center">Totals from 76 posts — 24 positive mentions
+                                (<strong>22</strong> unique voices), 12 negative mentions (<strong>11</strong> unique voices),
+                                40 neutral posts.</p>
                         </div>
-                        <p class="mt-4 text-sm text-gray-500 text-center">Totals from 76 posts — 24 positive mentions
-                            (<strong>22</strong> unique voices), 12 negative mentions (<strong>11</strong> unique
-                            voices),
-                            40 neutral posts.</p>
-                    </div>
-                    <div class="card p-6 h-full">
-                        <h3 class="text-lg font-semibold text-gray-800 mb-4 text-center">Demo Video of the System in
-                            Action</h3>
-                        <div class="relative w-full">
-                            <video class="w-full rounded-lg shadow-sm" controls>
-                                <source src="demo_video.mp4" type="video/mp4">
-                                Your browser does not support the video tag.
-                            </video>
+                        <div class="card p-6">
+                            <h3 class="text-lg font-semibold text-gray-800 mb-4 text-center">Demo Video of the System in
+                                Action</h3>
+                            <div class="relative w-full">
+                                <video class="w-full rounded-lg shadow-sm" controls>
+                                    <source src="demo_video.mp4" type="video/mp4">
+                                    Your browser does not support the video tag.
+                                </video>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -362,11 +393,70 @@
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             const markdownContainer = document.getElementById('demo-markdown');
+            const toggleButton = document.getElementById('markdown-toggle');
+            const fadeOverlay = document.getElementById('demo-markdown-fade');
             const sentimentChartElement = document.getElementById('demo-sentiment-chart');
             const TOTAL_POSTS = 76;
             const POSITIVE_COUNT = 24;
             const NEGATIVE_COUNT = 12;
             const NEUTRAL_COUNT = 40;
+
+            if (markdownContainer) {
+                markdownContainer.dataset.hasOverflow = 'false';
+            }
+
+            const updateCollapsibleUI = () => {
+                if (!markdownContainer) return;
+
+                const hasOverflow = markdownContainer.dataset.hasOverflow === 'true';
+                const expanded = markdownContainer.classList.contains('expanded');
+
+                if (toggleButton) {
+                    if (hasOverflow || expanded) {
+                        toggleButton.classList.remove('hidden');
+                        toggleButton.textContent = expanded ? '收合內容' : '展開全文';
+                        toggleButton.setAttribute('aria-expanded', expanded ? 'true' : 'false');
+                    } else {
+                        toggleButton.classList.add('hidden');
+                        toggleButton.setAttribute('aria-expanded', 'false');
+                    }
+                }
+
+                if (fadeOverlay) {
+                    const hideOverlay = expanded || !hasOverflow;
+                    fadeOverlay.classList.toggle('fade-overlay--hidden', hideOverlay);
+                }
+            };
+
+            const recalculateOverflow = () => {
+                if (!markdownContainer) return;
+
+                const wasExpanded = markdownContainer.classList.contains('expanded');
+                if (wasExpanded) {
+                    markdownContainer.classList.remove('expanded');
+                }
+
+                const hasOverflow = markdownContainer.scrollHeight > markdownContainer.clientHeight + 1;
+                markdownContainer.dataset.hasOverflow = hasOverflow ? 'true' : 'false';
+
+                if (wasExpanded) {
+                    markdownContainer.classList.add('expanded');
+                } else {
+                    markdownContainer.scrollTop = 0;
+                }
+
+                updateCollapsibleUI();
+            };
+
+            if (toggleButton && markdownContainer) {
+                toggleButton.addEventListener('click', () => {
+                    const expanded = markdownContainer.classList.toggle('expanded');
+                    if (!expanded) {
+                        markdownContainer.scrollTop = 0;
+                    }
+                    updateCollapsibleUI();
+                });
+            }
 
             if (sentimentChartElement && window.Chart) {
                 new Chart(sentimentChartElement, {
@@ -407,6 +497,22 @@
                 });
             }
 
+            const setMarkdownContent = (html) => {
+                if (!markdownContainer) return;
+
+                markdownContainer.innerHTML = html;
+                markdownContainer.classList.remove('expanded');
+                markdownContainer.scrollTop = 0;
+
+                markdownContainer.querySelectorAll('a').forEach(link => {
+                    link.setAttribute('target', '_blank');
+                    link.setAttribute('rel', 'noopener noreferrer');
+                    link.classList.add('feedback-link');
+                });
+
+                requestAnimationFrame(recalculateOverflow);
+            };
+
             if (markdownContainer && window.marked) {
                 fetch('demo_result.txt')
                     .then(response => {
@@ -417,20 +523,22 @@
                     })
                     .then(text => {
                         const html = marked.parse(text, { breaks: true });
-                        markdownContainer.innerHTML = html;
-
-                        markdownContainer.querySelectorAll('a').forEach(link => {
-                            link.setAttribute('target', '_blank');
-                            link.setAttribute('rel', 'noopener noreferrer');
-                            link.classList.add('feedback-link');
-                        });
+                        setMarkdownContent(html);
                     })
                     .catch(error => {
                         console.error('Failed to load demo markdown:', error);
-                        markdownContainer.innerHTML = '<p class="text-red-600">Unable to load demo results at this time.</p>';
+                        setMarkdownContent('<p class="text-red-600">Unable to load demo results at this time.</p>');
                     });
             } else if (markdownContainer) {
-                markdownContainer.innerHTML = '<p class="text-red-600">Markdown renderer unavailable.</p>';
+                setMarkdownContent('<p class="text-red-600">Markdown renderer unavailable.</p>');
+            }
+
+            if (markdownContainer) {
+                window.addEventListener('resize', () => {
+                    if (!markdownContainer.classList.contains('expanded')) {
+                        requestAnimationFrame(recalculateOverflow);
+                    }
+                });
             }
 
             document.querySelectorAll('a[href^="#"]').forEach(anchor => {
@@ -442,6 +550,8 @@
                     }
                 });
             });
+
+            updateCollapsibleUI();
         });
     </script>
 </body>
