@@ -316,6 +316,40 @@
                         </div>
                     </div>
                 </div>
+
+                <div class="mt-16">
+                    <div class="max-w-3xl mx-auto text-center">
+                        <h2 class="text-3xl font-extrabold text-gray-900">Another usage</h2>
+                        <h3 class="text-2xl font-extrabold text-gray-900">One-Off Market Pulse – Brazil</h3>
+                        <p class="mt-4 text-lg text-gray-500">Need a quick competitive read? We can run the scraper on a Brazil-only brand list, collect fresh social chatter, then upload the posts into ChatGPT and Gemini for a cross-model insight pass. Explore both AI takes below.</p>
+                    </div>
+                    <div class="mt-10 grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+                        <div class="card p-6 h-full flex flex-col">
+                            <h4 class="text-lg font-semibold text-gray-800 mb-4 text-center">ChatGPT Competitive Debrief</h4>
+                            <div class="relative flex-1">
+                                <div id="gpt-markdown" class="markdown-content collapsible pr-1 space-y-4">
+                                    <p class="text-gray-500">Loading ChatGPT analysis…</p>
+                                </div>
+                                <div id="gpt-markdown-fade" class="fade-overlay fade-overlay--hidden"></div>
+                            </div>
+                            <button id="gpt-toggle" type="button"
+                                class="mt-4 text-sm font-semibold text-indigo-600 hover:text-indigo-700 transition hidden self-start"
+                                aria-controls="gpt-markdown" aria-expanded="false">Expand</button>
+                        </div>
+                        <div class="card p-6 h-full flex flex-col">
+                            <h4 class="text-lg font-semibold text-gray-800 mb-4 text-center">Gemini Competitive Debrief</h4>
+                            <div class="relative flex-1">
+                                <div id="gemini-markdown" class="markdown-content collapsible pr-1 space-y-4">
+                                    <p class="text-gray-500">Loading Gemini analysis…</p>
+                                </div>
+                                <div id="gemini-markdown-fade" class="fade-overlay fade-overlay--hidden"></div>
+                            </div>
+                            <button id="gemini-toggle" type="button"
+                                class="mt-4 text-sm font-semibold text-indigo-600 hover:text-indigo-700 transition hidden self-start"
+                                aria-controls="gemini-markdown" aria-expanded="false">Expand</button>
+                        </div>
+                    </div>
+                </div>
             </div>
         </section>
 
@@ -389,71 +423,147 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', function () {
-            const markdownContainer = document.getElementById('demo-markdown');
-            const toggleButton = document.getElementById('markdown-toggle');
-            const fadeOverlay = document.getElementById('demo-markdown-fade');
             const sentimentChartElement = document.getElementById('demo-sentiment-chart');
             const TOTAL_POSTS = 76;
             const POSITIVE_COUNT = 24;
             const NEGATIVE_COUNT = 12;
             const NEUTRAL_COUNT = 40;
 
-            if (markdownContainer) {
-                markdownContainer.dataset.hasOverflow = 'false';
-            }
+            const initializeMarkdownViewer = (config) => {
+                const container = document.getElementById(config.containerId);
+                if (!container) return;
 
-            const updateCollapsibleUI = () => {
-                if (!markdownContainer) return;
+                const toggle = config.toggleId ? document.getElementById(config.toggleId) : null;
+                const fade = config.fadeId ? document.getElementById(config.fadeId) : null;
 
-                const hasOverflow = markdownContainer.dataset.hasOverflow === 'true';
-                const expanded = markdownContainer.classList.contains('expanded');
+                container.dataset.hasOverflow = 'false';
 
-                if (toggleButton) {
-                    if (hasOverflow || expanded) {
-                        toggleButton.classList.remove('hidden');
-                        toggleButton.textContent = expanded ? 'Collapse' : 'Expand';
-                        toggleButton.setAttribute('aria-expanded', expanded ? 'true' : 'false');
+                const updateUI = () => {
+                    const hasOverflow = container.dataset.hasOverflow === 'true';
+                    const expanded = container.classList.contains('expanded');
+
+                    if (toggle) {
+                        if (hasOverflow || expanded) {
+                            toggle.classList.remove('hidden');
+                            toggle.textContent = expanded ? 'Collapse' : 'Expand';
+                            toggle.setAttribute('aria-expanded', expanded ? 'true' : 'false');
+                        } else {
+                            toggle.classList.add('hidden');
+                            toggle.setAttribute('aria-expanded', 'false');
+                        }
+                    }
+
+                    if (fade) {
+                        const hideOverlay = expanded || !hasOverflow;
+                        fade.classList.toggle('fade-overlay--hidden', hideOverlay);
+                    }
+                };
+
+                const recalculateOverflow = () => {
+                    const wasExpanded = container.classList.contains('expanded');
+                    if (wasExpanded) {
+                        container.classList.remove('expanded');
+                    }
+
+                    const hasOverflow = container.scrollHeight > container.clientHeight + 1;
+                    container.dataset.hasOverflow = hasOverflow ? 'true' : 'false';
+
+                    if (wasExpanded) {
+                        container.classList.add('expanded');
                     } else {
-                        toggleButton.classList.add('hidden');
-                        toggleButton.setAttribute('aria-expanded', 'false');
+                        container.scrollTop = 0;
                     }
+
+                    updateUI();
+                };
+
+                if (toggle) {
+                    toggle.addEventListener('click', () => {
+                        const expanded = container.classList.toggle('expanded');
+                        if (!expanded) {
+                            container.scrollTop = 0;
+                        }
+                        updateUI();
+                    });
                 }
 
-                if (fadeOverlay) {
-                    const hideOverlay = expanded || !hasOverflow;
-                    fadeOverlay.classList.toggle('fade-overlay--hidden', hideOverlay);
-                }
-            };
+                const setContent = (html) => {
+                    container.innerHTML = html;
+                    container.classList.remove('expanded');
+                    container.scrollTop = 0;
 
-            const recalculateOverflow = () => {
-                if (!markdownContainer) return;
+                    container.querySelectorAll('a').forEach(link => {
+                        link.setAttribute('target', '_blank');
+                        link.setAttribute('rel', 'noopener noreferrer');
+                        link.classList.add('feedback-link');
+                    });
 
-                const wasExpanded = markdownContainer.classList.contains('expanded');
-                if (wasExpanded) {
-                    markdownContainer.classList.remove('expanded');
-                }
+                    requestAnimationFrame(recalculateOverflow);
+                };
 
-                const hasOverflow = markdownContainer.scrollHeight > markdownContainer.clientHeight + 1;
-                markdownContainer.dataset.hasOverflow = hasOverflow ? 'true' : 'false';
-
-                if (wasExpanded) {
-                    markdownContainer.classList.add('expanded');
-                } else {
-                    markdownContainer.scrollTop = 0;
+                if (!window.marked) {
+                    setContent('<p class="text-red-600">Markdown renderer unavailable.</p>');
+                    return;
                 }
 
-                updateCollapsibleUI();
-            };
+                fetch(config.source)
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error(`HTTP ${response.status}`);
+                        }
+                        return response.text();
+                    })
+                    .then(text => {
+                        const trimmed = text.trim();
+                        if (!trimmed) {
+                            setContent(`<p class="text-gray-500">${config.emptyMessage || 'No data available yet.'}</p>`);
+                            return;
+                        }
+                        const html = marked.parse(text, { breaks: true });
+                        setContent(html);
+                    })
+                    .catch(error => {
+                        console.error(`Failed to load ${config.source}:`, error);
+                        setContent(`<p class="text-red-600">${config.errorMessage || 'Unable to load content at this time.'}</p>`);
+                    });
 
-            if (toggleButton && markdownContainer) {
-                toggleButton.addEventListener('click', () => {
-                    const expanded = markdownContainer.classList.toggle('expanded');
-                    if (!expanded) {
-                        markdownContainer.scrollTop = 0;
+                window.addEventListener('resize', () => {
+                    if (!container.classList.contains('expanded')) {
+                        requestAnimationFrame(recalculateOverflow);
                     }
-                    updateCollapsibleUI();
                 });
-            }
+
+                updateUI();
+            };
+
+            const markdownViewers = [
+                {
+                    containerId: 'demo-markdown',
+                    toggleId: 'markdown-toggle',
+                    fadeId: 'demo-markdown-fade',
+                    source: 'demo_result.txt',
+                    errorMessage: 'Unable to load demo results at this time.',
+                    emptyMessage: 'No demo results available yet.'
+                },
+                {
+                    containerId: 'gpt-markdown',
+                    toggleId: 'gpt-toggle',
+                    fadeId: 'gpt-markdown-fade',
+                    source: 'analysis_gpt.txt',
+                    errorMessage: 'Unable to load ChatGPT analysis at this time.',
+                    emptyMessage: 'No ChatGPT analysis available yet.'
+                },
+                {
+                    containerId: 'gemini-markdown',
+                    toggleId: 'gemini-toggle',
+                    fadeId: 'gemini-markdown-fade',
+                    source: 'analysis_gemini.txt',
+                    errorMessage: 'Unable to load Gemini analysis at this time.',
+                    emptyMessage: 'No Gemini analysis available yet.'
+                }
+            ];
+
+            markdownViewers.forEach(config => initializeMarkdownViewer(config));
 
             if (sentimentChartElement && window.Chart) {
                 new Chart(sentimentChartElement, {
@@ -494,50 +604,6 @@
                 });
             }
 
-            const setMarkdownContent = (html) => {
-                if (!markdownContainer) return;
-
-                markdownContainer.innerHTML = html;
-                markdownContainer.classList.remove('expanded');
-                markdownContainer.scrollTop = 0;
-
-                markdownContainer.querySelectorAll('a').forEach(link => {
-                    link.setAttribute('target', '_blank');
-                    link.setAttribute('rel', 'noopener noreferrer');
-                    link.classList.add('feedback-link');
-                });
-
-                requestAnimationFrame(recalculateOverflow);
-            };
-
-            if (markdownContainer && window.marked) {
-                fetch('demo_result.txt')
-                    .then(response => {
-                        if (!response.ok) {
-                            throw new Error(`HTTP ${response.status}`);
-                        }
-                        return response.text();
-                    })
-                    .then(text => {
-                        const html = marked.parse(text, { breaks: true });
-                        setMarkdownContent(html);
-                    })
-                    .catch(error => {
-                        console.error('Failed to load demo markdown:', error);
-                        setMarkdownContent('<p class="text-red-600">Unable to load demo results at this time.</p>');
-                    });
-            } else if (markdownContainer) {
-                setMarkdownContent('<p class="text-red-600">Markdown renderer unavailable.</p>');
-            }
-
-            if (markdownContainer) {
-                window.addEventListener('resize', () => {
-                    if (!markdownContainer.classList.contains('expanded')) {
-                        requestAnimationFrame(recalculateOverflow);
-                    }
-                });
-            }
-
             document.querySelectorAll('a[href^="#"]').forEach(anchor => {
                 anchor.addEventListener('click', function (e) {
                     e.preventDefault();
@@ -547,8 +613,6 @@
                     }
                 });
             });
-
-            updateCollapsibleUI();
         });
     </script>
 </body>
